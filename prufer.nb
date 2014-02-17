@@ -1,0 +1,830 @@
+(* Content-type: application/mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 6.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       145,          7]
+NotebookDataLength[     31404,        821]
+NotebookOptionsPosition[     28850,        727]
+NotebookOutlinePosition[     29548,        754]
+CellTagsIndexPosition[     29422,        748]
+WindowFrame->Normal
+ContainsDynamic->True *)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+
+Cell[CellGroupData[{
+Cell["Prufer' s code and labeled tree.", "Title",
+ CellChangeTimes->{{3.5997984506340647`*^9, 3.5997984524151664`*^9}}],
+
+Cell[CellGroupData[{
+
+Cell["Author", "Section",
+ CellChangeTimes->{{3.599798575351198*^9, 3.5997985881339293`*^9}}],
+
+Cell["\<\
+Sijun Liu
+This is part of the demo I have done for a combinatorial theory class I took.\
+\
+\>", "Text",
+ CellChangeTimes->{{3.5997985984045167`*^9, 3.599798626510124*^9}, 
+   3.5997992020840454`*^9, {3.599804078627968*^9, 3.599804194120573*^9}, 
+   3.5998078274253864`*^9, {3.5998149055582323`*^9, 3.599814906497286*^9}}]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Introduction", "Section",
+ CellChangeTimes->{{3.5997982939071007`*^9, 3.5997982968442683`*^9}, 
+   3.599798589829026*^9}],
+
+Cell["\<\
+   It' s well known that there is a bijection between Prufer' s code and \
+labeled tree. A labeled tree on n vertices is bijective to a sequence of \
+length n - 2 with numbers selected from {1, 2, 3, ...., n}, such a sequence \
+is called Prufer' s code.
+    Since there are n^(n - 2) many possible sequences (each number has n - 2 \
+choices, n numbers give us n^(n - 2) choices), we know there should be n^(n - \
+2) many distinct labeled trees.
+    In this program, we implement the algorithm to convert labeled tree to \
+Prufer's code. Finally, we will show an animation, on how the edges are \
+deleted, and how the numbers are selected for prufer's code step by step, \
+when converting labeled tree to Prufer' s code.\
+\>", "Text",
+ CellChangeTimes->{{3.5997983953139005`*^9, 3.599798435658208*^9}, 
+   3.5998029582998886`*^9, {3.599803703284499*^9, 3.599803743317789*^9}, {
+   3.599814972499061*^9, 3.599815017669645*^9}}]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Input and output", "Section",
+ CellChangeTimes->{{3.599798482706899*^9, 3.599798500504917*^9}, 
+   3.5997985917901382`*^9}],
+
+Cell["\<\
+ 
+   Labeled tree will be input and output in the form {vertex set, edge set}. \
+For example, 
+\tG = {{1, 2, 3, 4, 5, 6}, {{1, 4}, {2, 4}, {3, 4}, {4, 5}, {5, 6}}} 
+will be a labeled tree with vertex set 1, 2, 3, 4, 5, 6, and {1, 4} means \
+there is an undirected edge between vertex 1 and vertex 4.
+   Prufer' s code will just be a list. For example, the above tree gives us \
+the following Prufer' s code : {4, 4, 4, 5}. The length of Prufer' s code is \
+n - 2, so this code is corresponding to a tree with vertex set {1, 2, 3, ..., \
+n} = {1, 2, 3, 4, 5, 6}.  \
+\>", "Text",
+ CellChangeTimes->{
+  3.5997982574720163`*^9, {3.599798299886442*^9, 3.5997983047727222`*^9}, 
+   3.599798338671661*^9, {3.5997985073653097`*^9, 3.5997985468465676`*^9}, 
+   3.59979919220648*^9, {3.599815065762396*^9, 3.599815068393546*^9}}]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Labeled tree to Prufer' s code", "Section",
+ CellChangeTimes->{{3.599798482706899*^9, 3.599798500504917*^9}, 
+   3.5997985917901382`*^9, 3.5997990561837*^9}],
+
+Cell[CellGroupData[{
+
+Cell["Algorithm", "Subsection",
+ CellChangeTimes->{{3.5997990725816383`*^9, 3.5997990747617626`*^9}}],
+
+Cell["\<\
+   Iteratively remove vertices from the tree until only two vertices remain. \
+Specifically, at step i, remove the smallest label of leafs and set the ith \
+element of the Prufer' s code to be the label of this leaf's neighbor. The \
+algorithm will run n - 2 times, so it generates a sequence of length n - 2.  \
+\
+\>", "Text",
+ CellChangeTimes->{
+  3.5997982574720163`*^9, {3.599798299886442*^9, 3.5997983047727222`*^9}, 
+   3.599798338671661*^9, {3.5997985073653097`*^9, 3.5997985468465676`*^9}, {
+   3.599799103324396*^9, 3.599799140154503*^9}, 3.599799186990182*^9, {
+   3.599799549251902*^9, 3.5997995561152945`*^9}, 3.599802969881551*^9}]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Implementation", "Subsection",
+ CellChangeTimes->{{3.599799164036869*^9, 3.599799174425463*^9}}],
+
+Cell[CellGroupData[{
+
+Cell["Convert the tree into its adjacent matrix M. ", "Item",
+ CellChangeTimes->{{3.5997992497127695`*^9, 3.5997992725860777`*^9}, {
+  3.5997996715248957`*^9, 3.599799673056983*^9}}],
+
+Cell["\<\
+At step i,  where i is from 1 to n - 2, (or equivalently, when there are more \
+than two vertices left in the remaining tree) do the following operations\
+\>", "Item",
+ CellChangeTimes->{{3.5997992951523685`*^9, 3.599799318555707*^9}, {
+   3.599802605299698*^9, 3.599802648674179*^9}, 3.599802972529702*^9}],
+
+Cell[CellGroupData[{
+
+Cell["\<\
+Find the smallest j, such that row j has exactly one 1 with others being 0 \
+(this j is the smallest label of remaining leafs)\
+\>", "Subitem",
+ CellChangeTimes->{{3.599799392354928*^9, 3.599799522127351*^9}, {
+  3.5997995670219183`*^9, 3.599799570579122*^9}}],
+
+Cell["\<\
+Append the column index k of that entry 1 to Prufer's code ({j, k} is the \
+vertex need to be removed, where j is the leaf, and k is its neighbor (also \
+call it root))\
+\>", "Subitem",
+ CellChangeTimes->{{3.599799392354928*^9, 3.5997994770667734`*^9}, {
+   3.599799574189328*^9, 3.5997996491416154`*^9}, {3.5998130565724764`*^9, 
+   3.5998130623048043`*^9}, {3.599813244068201*^9, 3.599813258448023*^9}, {
+   3.599815160164795*^9, 3.599815228327694*^9}, 3.599815283891872*^9}],
+
+Cell["\<\
+Set matrix M[k,j]=M[j,k]=0. (Remove the leaf and this selected edge)\
+\>", "Subitem",
+ CellChangeTimes->{{3.599799655304968*^9, 3.599799703685735*^9}, {
+  3.5998012223055954`*^9, 3.5998012557315073`*^9}, {3.5998129835302987`*^9, 
+  3.599813013194996*^9}, {3.5998130666610537`*^9, 3.599813069834235*^9}, {
+  3.5998152444356155`*^9, 3.5998152609965625`*^9}}]
+}, Open  ]],
+
+Cell["Return the Prufer's code.", "Item",
+ CellChangeTimes->{{3.599799714489353*^9, 3.5997997210287275`*^9}}]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Code", "Subsection",
+ CellChangeTimes->{{3.5997998072156568`*^9, 3.5997998078166914`*^9}}],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+   RowBox[{"AdjacentMatrix", "[", "G_", "]"}], " ", ":=", " ", 
+   RowBox[{"Module", "[", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"vertexSet", " ", "=", " ", 
+        RowBox[{"G", "[", 
+         RowBox[{"[", "1", "]"}], "]"}]}], ",", " ", 
+       RowBox[{"edgeSet", " ", "=", " ", 
+        RowBox[{"G", "[", 
+         RowBox[{"[", "2", "]"}], "]"}]}], ",", " ", "n", ",", " ", "matrix", 
+       ",", " ", "k", ",", " ", "edge"}], "}"}], ",", "\n", "   \t", 
+     RowBox[{
+      RowBox[{"n", " ", "=", " ", 
+       RowBox[{"Length", "[", "vertexSet", "]"}]}], ";", " ", 
+      RowBox[{"(*", " ", 
+       RowBox[{"number", " ", "of", " ", "vertices"}], " ", "*)"}], "\n", 
+      "   \t", 
+      RowBox[{"matrix", " ", "=", " ", 
+       RowBox[{"Table", "[", 
+        RowBox[{"0", ",", " ", 
+         RowBox[{"{", 
+          RowBox[{"i", ",", " ", "n"}], "}"}], ",", " ", 
+         RowBox[{"{", 
+          RowBox[{"j", ",", " ", "n"}], "}"}]}], "]"}]}], ";", " ", "\n", 
+      "   \t", 
+      RowBox[{"For", "[", 
+       RowBox[{
+        RowBox[{"k", " ", "=", " ", "1"}], ",", " ", 
+        RowBox[{"k", " ", "<=", " ", 
+         RowBox[{"Length", "[", "edgeSet", "]"}]}], ",", " ", 
+        RowBox[{"k", "++"}], ",", "\n", "    \t\t", 
+        RowBox[{
+         RowBox[{"edge", " ", "=", " ", 
+          RowBox[{"edgeSet", "[", 
+           RowBox[{"[", "k", "]"}], "]"}]}], ";", "\n", "\t\t\t", 
+         RowBox[{"(*", " ", 
+          RowBox[{
+           RowBox[{"If", " ", "the", " ", "edge", " ", "is", " ", 
+            RowBox[{"{", 
+             RowBox[{"i", ",", "j"}], "}"}]}], ",", " ", 
+           RowBox[{
+            RowBox[{
+             RowBox[{"matrix", "[", "i", "]"}], "[", "j", "]"}], " ", "and", 
+            " ", 
+            RowBox[{
+             RowBox[{"matrix", "[", "j", "]"}], "[", "i", "]"}], " ", "are", 
+            " ", "both", " ", "1"}]}], " ", "*)"}], "\n", "    \t\t", 
+         RowBox[{
+          RowBox[{"matrix", "[", 
+           RowBox[{"[", 
+            RowBox[{
+             RowBox[{"edge", "[", 
+              RowBox[{"[", "1", "]"}], "]"}], ",", " ", 
+             RowBox[{"edge", "[", 
+              RowBox[{"[", "2", "]"}], "]"}]}], "]"}], "]"}], " ", "=", " ", 
+          "1"}], ";", "\n", "    \t\t", 
+         RowBox[{
+          RowBox[{"matrix", "[", 
+           RowBox[{"[", 
+            RowBox[{
+             RowBox[{"edge", "[", 
+              RowBox[{"[", "2", "]"}], "]"}], ",", " ", 
+             RowBox[{"edge", "[", 
+              RowBox[{"[", "1", "]"}], "]"}]}], "]"}], "]"}], " ", "=", " ", 
+          "1"}]}]}], "]"}], ";", "\n", "   \t", 
+      RowBox[{"Return", "[", "matrix", "]"}]}]}], "]"}]}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{
+    RowBox[{"AdjacentMatrix", "::", "usage"}], " ", "=", " ", "\n", "\t", 
+    "\"\<AdjacentMatrix[G] returns the adjacent matrix of a tree G, where G \
+has\n\t the form {vertex set, edge set}.\>\""}], ";"}], "\n"}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{
+    RowBox[{"NextEdgeToRemove", "[", "matrix_", "]"}], ":=", 
+    RowBox[{"Module", "[", 
+     RowBox[{
+      RowBox[{"{", 
+       RowBox[{
+        RowBox[{"i", "=", "1"}], ",", 
+        RowBox[{"j", "=", "1"}], ",", "rowSum"}], "}"}], ",", " ", "\n", "\t",
+       
+      RowBox[{
+       RowBox[{"rowSum", "=", 
+        RowBox[{"Apply", "[", 
+         RowBox[{"Plus", ",", 
+          RowBox[{"matrix", "[", 
+           RowBox[{"[", "i", "]"}], "]"}]}], "]"}]}], ";", 
+       "\[IndentingNewLine]", "\t", 
+       RowBox[{"While", "[", 
+        RowBox[{
+         RowBox[{
+          RowBox[{"rowSum", ">", "1"}], "||", 
+          RowBox[{"rowSum", "\[Equal]", "0"}]}], ",", 
+         RowBox[{
+          RowBox[{"i", "++"}], ";", " ", 
+          RowBox[{"rowSum", "=", 
+           RowBox[{"Apply", "[", 
+            RowBox[{"Plus", ",", 
+             RowBox[{"matrix", "[", 
+              RowBox[{"[", "i", "]"}], "]"}]}], "]"}]}]}]}], "]"}], ";", " ", 
+       
+       RowBox[{"(*", " ", 
+        RowBox[{
+        "find", " ", "the", " ", "first", " ", "row", " ", "with", " ", "all",
+          " ", "zeros", " ", "but", " ", "a", " ", "single", " ", "1"}], " ", 
+        "*)"}], "\n", "\t", 
+       RowBox[{"While", "[", 
+        RowBox[{
+         RowBox[{
+          RowBox[{"matrix", "[", 
+           RowBox[{"[", 
+            RowBox[{"i", ",", "j"}], "]"}], "]"}], "\[Equal]", "0"}], ",", 
+         RowBox[{"j", "++"}]}], "]"}], ";", " ", 
+       RowBox[{"(*", " ", 
+        RowBox[{
+        "find", " ", "the", " ", "column", " ", "index", " ", "of", " ", 
+         "that", " ", "single", " ", "1"}], " ", "*)"}], "\n", "\t", 
+       RowBox[{"Return", "[", 
+        RowBox[{"{", 
+         RowBox[{"i", ",", "j"}], "}"}], "]"}]}]}], "]"}]}], ";", " ", 
+   RowBox[{"(*", " ", 
+    RowBox[{
+    "return", " ", "the", " ", "position", " ", "of", " ", "the", " ", 
+     "single", " ", "1.", " ", "the", " ", "position", " ", "is", " ", "the", 
+     " ", "same", "\n", "\t\t\t\t\t", "as", " ", "the", " ", "edge", " ", 
+     "to", " ", "be", " ", "removed"}], "*)"}], "\n", 
+   RowBox[{
+    RowBox[{"NextEdgeToRemove", "::", "usage"}], " ", "=", " ", "\n", "\t", 
+    "\"\<NextEdgeToRemove[matrix] returns the next edge {i, j} to remove, \
+where i is the leaf vertex and j is the root.\>\""}], ";"}], "\n"}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"ToPruferCode", "[", "G_", "]"}], ":=", 
+   RowBox[{"Module", "[", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"adjacentMatrix", "=", 
+        RowBox[{"AdjacentMatrix", "[", "G", "]"}]}], ",", " ", 
+       RowBox[{"pruferCode", "=", 
+        RowBox[{"{", "}"}]}], ",", " ", "leaf", ",", " ", "root", ",", "n", 
+       ",", "i"}], "}"}], ",", "\n", "\t", 
+     RowBox[{
+      RowBox[{"n", "=", 
+       RowBox[{"Length", "[", 
+        RowBox[{"G", "[", 
+         RowBox[{"[", "1", "]"}], "]"}], "]"}]}], ";", " ", 
+      RowBox[{"(*", " ", 
+       RowBox[{
+       "n", " ", "is", " ", "the", " ", "total", " ", "number", " ", "of", 
+        " ", "vertices"}], " ", "*)"}], "\[IndentingNewLine]", "\t", 
+      RowBox[{"For", "[", 
+       RowBox[{
+        RowBox[{"i", "=", "1"}], ",", 
+        RowBox[{"i", "\[LessEqual]", 
+         RowBox[{"n", "-", "2"}]}], ",", 
+        RowBox[{"i", "++"}], ",", " ", 
+        RowBox[{"(*", " ", 
+         RowBox[{
+          RowBox[{"run", " ", "n"}], "-", 
+          RowBox[{"2", " ", "steps"}]}], " ", "*)"}], "\[IndentingNewLine]", 
+        "\t\t", 
+        RowBox[{
+         RowBox[{
+          RowBox[{"{", 
+           RowBox[{"leaf", ",", " ", "root"}], "}"}], "=", 
+          RowBox[{"NextEdgeToRemove", "[", "adjacentMatrix", "]"}]}], ";", 
+         " ", 
+         RowBox[{"(*", " ", 
+          RowBox[{"find", " ", "the", " ", "edge", " ", "to", " ", "remove"}],
+           " ", "*)"}], "\n", "\t\t", 
+         RowBox[{"AppendTo", "[", 
+          RowBox[{"pruferCode", ",", " ", "root"}], "]"}], ";", " ", 
+         RowBox[{"(*", " ", 
+          RowBox[{
+          "add", " ", "root", " ", "of", " ", "this", " ", "edge", " ", "to", 
+           " ", "Prufer", " ", "code"}], " ", "*)"}], "\[IndentingNewLine]", 
+         "\t\t", 
+         RowBox[{
+          RowBox[{"adjacentMatrix", "[", 
+           RowBox[{"[", 
+            RowBox[{"leaf", ",", "root"}], "]"}], "]"}], "=", 
+          RowBox[{
+           RowBox[{"adjacentMatrix", "[", 
+            RowBox[{"[", 
+             RowBox[{"root", ",", "leaf"}], "]"}], "]"}], "=", "0"}]}], 
+         ";"}]}], " ", 
+       RowBox[{"(*", " ", 
+        RowBox[{
+        "remove", " ", "the", " ", "leaf", " ", "and", " ", "the", " ", 
+         "edge"}], " ", "*)"}], "\[IndentingNewLine]", "\t\t", "]"}], ";", 
+      "\[IndentingNewLine]", "\t", 
+      RowBox[{"Return", "[", "pruferCode", "]"}]}]}], "]"}]}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"ToPruferCode", "::", "usage"}], " ", "=", " ", "\n", "\t", 
+   "\"\<ToPruferCode[G] returns the Prufer's code of a labeled tree G, where \
+G is represented as {vertex set, edge set}.\>\""}], ";"}]}], "Code",
+ CellChangeTimes->{
+  3.5997999451725473`*^9, {3.59979997773641*^9, 3.5998000298583913`*^9}, {
+   3.5998001874614058`*^9, 3.5998002458687463`*^9}, 3.5998002954755836`*^9, {
+   3.599801772190047*^9, 3.5998019036255646`*^9}, {3.5998019364464417`*^9, 
+   3.59980201141973*^9}, 3.5998020441226006`*^9, {3.599802281574182*^9, 
+   3.5998025500765395`*^9}, {3.5998026685763173`*^9, 3.599802899677535*^9}, {
+   3.5998051275539627`*^9, 3.59980513310528*^9}, {3.599805171797493*^9, 
+   3.599805204176345*^9}, {3.5998061230749035`*^9, 3.5998061618771224`*^9}, {
+   3.599806209714859*^9, 3.5998063022751527`*^9}, {3.599806332327872*^9, 
+   3.5998063717141247`*^9}, {3.59980640240588*^9, 3.5998066421375923`*^9}, {
+   3.5998066778956375`*^9, 3.5998067016239944`*^9}, {3.599806742493332*^9, 
+   3.599806770926958*^9}, {3.599806804758893*^9, 3.5998068941070037`*^9}, {
+   3.599806938294531*^9, 3.599807011374711*^9}, {3.5998070658558273`*^9, 
+   3.599807067955947*^9}, {3.5998071127765107`*^9, 3.5998072313632936`*^9}, {
+   3.5998073663480144`*^9, 3.5998074037471533`*^9}, {3.599807560422115*^9, 
+   3.5998078061341686`*^9}, {3.5998130923775244`*^9, 
+   3.5998132054359913`*^9}, {3.599813325445855*^9, 3.5998134239354887`*^9}, {
+   3.599813474395375*^9, 3.5998134776465607`*^9}, {3.599813618006589*^9, 
+   3.5998136310453343`*^9}, {3.5998136642002306`*^9, 3.599813773219466*^9}}]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Example", "Subsection",
+ CellChangeTimes->{{3.599802109224324*^9, 3.599802110609403*^9}}],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"?", "ToPruferCode"}]], "Input",
+ CellChangeTimes->{{3.5998009483959284`*^9, 3.5998009536622295`*^9}, {
+  3.5998020912422953`*^9, 3.599802098869732*^9}, {3.5998075009247117`*^9, 
+  3.599807503310848*^9}, {3.5998135039720664`*^9, 3.5998135041850786`*^9}}],
+
+Cell[BoxData[
+ StyleBox["\<\"ToPruferCode[G] returns the Prufer's code of a labeled tree G, \
+where G is represented as {vertex set, edge set}.\"\>", "MSG"]], "Print", \
+"PrintUsage",
+ CellChangeTimes->{3.5998135599112663`*^9},
+ CellTags->"Info3599784759-8991910"]
+}, Open  ]],
+
+Cell["The following is an example.", "Program",
+ CellChangeTimes->{{3.599801533230379*^9, 3.5998015397787533`*^9}, {
+  3.5998015724046197`*^9, 3.5998015737366962`*^9}}],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"G", " ", "=", " ", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{
+      "1", ",", " ", "2", ",", " ", "3", ",", " ", "4", ",", " ", "5", ",", 
+       " ", "6", ",", " ", "7", ",", " ", "8", ",", " ", "9", ",", " ", 
+       "10"}], "}"}], ",", " ", 
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"{", 
+        RowBox[{"2", ",", " ", "3"}], "}"}], ",", " ", 
+       RowBox[{"{", 
+        RowBox[{"2", ",", " ", "4"}], "}"}], ",", " ", 
+       RowBox[{"{", 
+        RowBox[{"1", ",", " ", "2"}], "}"}], ",", " ", 
+       RowBox[{"{", 
+        RowBox[{"1", ",", " ", "5"}], "}"}], ",", " ", 
+       RowBox[{"{", 
+        RowBox[{"1", ",", " ", "7"}], "}"}], ",", " ", 
+       RowBox[{"{", 
+        RowBox[{"6", ",", " ", "7"}], "}"}], ",", " ", 
+       RowBox[{"{", 
+        RowBox[{"1", ",", " ", "10"}], "}"}], ",", " ", 
+       RowBox[{"{", 
+        RowBox[{"8", ",", " ", "10"}], "}"}], ",", " ", 
+       RowBox[{"{", 
+        RowBox[{"9", ",", " ", "10"}], "}"}]}], "}"}]}], "}"}]}], 
+  ";"}], "\n", 
+ RowBox[{"ToPruferCode", "[", "G", "]"}]}], "Code",
+ CellChangeTimes->{{3.5998021472965016`*^9, 3.5998021587991595`*^9}, {
+  3.59981350997841*^9, 3.599813510185422*^9}}],
+
+Cell[BoxData[
+ RowBox[{"{", 
+  RowBox[{
+  "2", ",", "2", ",", "1", ",", "1", ",", "7", ",", "1", ",", "10", ",", 
+   "10"}], "}"}]], "Output",
+ CellChangeTimes->{
+  3.599801661173697*^9, 3.5998021595722036`*^9, 3.5998033694454045`*^9, 
+   3.599803457328431*^9, {3.599803972926922*^9, 3.599804001654565*^9}, 
+   3.5998052228214116`*^9, 3.599807507608094*^9, 3.599813511586502*^9, 
+   3.599813562383407*^9, {3.599813740366587*^9, 3.599813777886733*^9}}]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Animation demonstration", "Subsection",
+ CellChangeTimes->{{3.5998033288760843`*^9, 3.5998033339183726`*^9}}],
+
+Cell["\<\
+We keep track of the resulting tree and the vertex removed in each step, and \
+draw the graph in each step. This way we will get an animation. To get the \
+resulting tree in each step, we just need to record the adjacent matrix.\
+\>", "Program",
+ CellChangeTimes->{{3.59980787434307*^9, 3.599807981404194*^9}}],
+
+Cell[BoxData[
+ RowBox[{"<<", "Combinatorica`", " "}]], "Code"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+   RowBox[{"PruferCodeAnimation", "[", "G_", "]"}], ":=", 
+   RowBox[{"Module", "[", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"pruferCode", "=", 
+        RowBox[{"{", "}"}]}], ",", " ", 
+       RowBox[{"leafEachTime", "=", 
+        RowBox[{"{", "}"}]}], ",", "n", ",", " ", "leaf", ",", " ", "root", 
+       ",", " ", "graph", ",", " ", 
+       RowBox[{"graphEachStep", "=", 
+        RowBox[{"{", "}"}]}], ",", " ", "adjMatrix", ",", "i", ",", "k"}], 
+      "}"}], ",", "\n", "\t", 
+     RowBox[{
+      RowBox[{"n", "=", 
+       RowBox[{"Length", "[", 
+        RowBox[{"G", "[", 
+         RowBox[{"[", "1", "]"}], "]"}], "]"}]}], ";", "\t", 
+      RowBox[{"(*", " ", 
+       RowBox[{
+       "n", " ", "is", " ", "the", " ", "total", " ", "number", " ", 
+        "vertices"}], "*)"}], "\n", "\t", 
+      RowBox[{"adjMatrix", "=", 
+       RowBox[{"AdjacentMatrix", "[", "G", "]"}]}], ";", "  ", "\n", "\n", 
+      "\t", 
+      RowBox[{"For", "[", 
+       RowBox[{
+        RowBox[{"i", "=", "1"}], ",", 
+        RowBox[{"i", "\[LessEqual]", 
+         RowBox[{"n", "-", "2"}]}], ",", 
+        RowBox[{"i", "++"}], ",", "  ", 
+        RowBox[{"(*", " ", 
+         RowBox[{
+          RowBox[{
+           RowBox[{"run", " ", "n"}], "-", 
+           RowBox[{"2", " ", "times"}]}], ",", " ", 
+          RowBox[{"each", " ", "time", " ", "get", " ", "an", " ", "edge"}], 
+          ",", " ", 
+          RowBox[{
+          "put", " ", "the", " ", "root", " ", "in", " ", "pruferCode"}], ",",
+           " ", 
+          RowBox[{"and", " ", "leaf", " ", "in", " ", "leafEachTime"}]}], " ",
+          "*)"}], "\n", "\t\t", 
+        RowBox[{
+         RowBox[{"graph", "=", 
+          RowBox[{"FromAdjacencyMatrix", "[", "adjMatrix", "]"}]}], ";", "\n",
+          "\t\t", 
+         RowBox[{"AppendTo", "[", 
+          RowBox[{"graphEachStep", ",", "graph"}], "]"}], ";", "\n", "\t\t", 
+         RowBox[{
+          RowBox[{"{", 
+           RowBox[{"leaf", ",", "root"}], "}"}], "=", 
+          RowBox[{"NextEdgeToRemove", "[", "adjMatrix", "]"}]}], ";", "\n", 
+         "\t\t", 
+         RowBox[{"AppendTo", "[", 
+          RowBox[{"pruferCode", ",", "root"}], "]"}], ";", "\n", "\t\t", 
+         RowBox[{"AppendTo", "[", 
+          RowBox[{"leafEachTime", ",", "leaf"}], "]"}], ";", "\n", "\t\t", 
+         RowBox[{
+          RowBox[{"adjMatrix", "[", 
+           RowBox[{"[", 
+            RowBox[{"leaf", ",", "root"}], "]"}], "]"}], "=", 
+          RowBox[{
+           RowBox[{"adjMatrix", "[", 
+            RowBox[{"[", 
+             RowBox[{"root", ",", "leaf"}], "]"}], "]"}], "=", "0"}]}], 
+         ";"}]}], "\n", "\t", "]"}], ";", "\n", "\t", "\n", "\t", 
+      RowBox[{"Animate", "[", 
+       RowBox[{
+        RowBox[{"ShowGraph", "[", 
+         RowBox[{
+          RowBox[{"graphEachStep", "[", 
+           RowBox[{"[", "k", "]"}], "]"}], ",", "\n", "\t\t\t\t", 
+          RowBox[{"(*", " ", 
+           RowBox[{
+           "mark", " ", "the", " ", "vertex", " ", "to", " ", "be", " ", 
+            "added", " ", "in", " ", 
+            RowBox[{"prufer", "'"}], "s", " ", "code", " ", "by", " ", 
+            "green"}], " ", "*)"}], "\n", "\t\t\t\t", 
+          RowBox[{"{", 
+           RowBox[{
+            RowBox[{"{", 
+             RowBox[{
+              RowBox[{"pruferCode", "[", 
+               RowBox[{"[", "k", "]"}], "]"}], ",", 
+              RowBox[{"VertexColor", "\[Rule]", "Green"}], ",", " ", 
+              RowBox[{"VertexStyle", "\[Rule]", 
+               RowBox[{"Disk", "[", "Large", "]"}]}]}], "}"}], ",", " ", "\n",
+             "\t\t\t\t", 
+            RowBox[{"(*", " ", 
+             RowBox[{
+             "mark", " ", "the", " ", "selected", " ", "edge", " ", "by", " ",
+               "red"}], " ", "*)"}], "\n", "\t\t\t\t", 
+            RowBox[{"{", 
+             RowBox[{
+              RowBox[{"{", 
+               RowBox[{
+                RowBox[{"pruferCode", "[", 
+                 RowBox[{"[", "k", "]"}], "]"}], ",", 
+                RowBox[{"leafEachTime", "[", 
+                 RowBox[{"[", "k", "]"}], "]"}]}], "}"}], ",", " ", 
+              RowBox[{"EdgeColor", "\[Rule]", "Red"}]}], "}"}]}], "}"}], ",", 
+          " ", 
+          RowBox[{"VertexLabel", "\[Rule]", "True"}]}], "]"}], ",", "\n", 
+        "\t\t", 
+        RowBox[{"{", 
+         RowBox[{"k", ",", " ", 
+          RowBox[{"Range", "[", 
+           RowBox[{"n", "-", "2"}], "]"}]}], "}"}], ",", " ", 
+        RowBox[{"AnimationRunning", "\[Rule]", "False"}]}], "]"}]}]}], "\n", 
+    "]"}]}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"PruferCodeAnimation", "::", "usage"}], " ", "=", " ", "\n", "\t", 
+   "\"\<PruferCodeAnimation[G] animates the process of obtaining prufer's \
+code step by step, each step, the vertex to be added in\n\tprufer's code is \
+marked by green, and the edge selected to remove is marked by red.\>\""}], 
+  ";"}]}], "Code",
+ CellChangeTimes->{{3.5998030347732625`*^9, 3.5998032022188396`*^9}, {
+  3.5998034754804697`*^9, 3.599803491639394*^9}, {3.59980460160588*^9, 
+  3.599804751659463*^9}, {3.5998056529150114`*^9, 3.599805654248088*^9}, {
+  3.59980568435381*^9, 3.5998057144205294`*^9}, {3.5998057477614365`*^9, 
+  3.599805766267495*^9}, {3.599813824299388*^9, 3.5998142661326594`*^9}, {
+  3.599814308434079*^9, 3.5998143838393917`*^9}, {3.5998144497941647`*^9, 
+  3.599814466087096*^9}, {3.59981452262933*^9, 3.599814631494557*^9}, {
+  3.599814694225145*^9, 3.599814852112176*^9}, {3.599815464776218*^9, 
+  3.5998156378261156`*^9}}],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"?", "PruferCodeAnimation"}]], "Input",
+ CellChangeTimes->{{3.599814857124462*^9, 3.5998148630257998`*^9}}],
+
+Cell[BoxData[
+ StyleBox["\<\"PruferCodeAnimation[G] animates the process of obtaining \
+prufer's code step by step, each step, the vertex to be added \
+in\\n\\tprufer's code is marked by green, and the edge selected to remove is \
+marked by red.\"\>", "MSG"]], "Print", "PrintUsage",
+ CellChangeTimes->{3.5998148638638477`*^9},
+ CellTags->"Info3599786063-5150225"]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Example", "Subsection",
+ CellChangeTimes->{{3.5998148816068625`*^9, 3.599814882866935*^9}}],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"G", " ", "=", " ", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{
+      "1", ",", " ", "2", ",", " ", "3", ",", " ", "4", ",", " ", "5", ",", 
+       " ", "6", ",", " ", "7", ",", " ", "8", ",", " ", "9", ",", " ", 
+       "10"}], "}"}], ",", " ", 
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"{", 
+        RowBox[{"2", ",", " ", "3"}], "}"}], ",", " ", 
+       RowBox[{"{", 
+        RowBox[{"2", ",", " ", "4"}], "}"}], ",", " ", 
+       RowBox[{"{", 
+        RowBox[{"1", ",", " ", "2"}], "}"}], ",", " ", 
+       RowBox[{"{", 
+        RowBox[{"1", ",", " ", "5"}], "}"}], ",", " ", 
+       RowBox[{"{", 
+        RowBox[{"1", ",", " ", "7"}], "}"}], ",", " ", 
+       RowBox[{"{", 
+        RowBox[{"6", ",", " ", "7"}], "}"}], ",", " ", 
+       RowBox[{"{", 
+        RowBox[{"1", ",", " ", "10"}], "}"}], ",", " ", 
+       RowBox[{"{", 
+        RowBox[{"8", ",", " ", "10"}], "}"}], ",", " ", 
+       RowBox[{"{", 
+        RowBox[{"9", ",", " ", "10"}], "}"}]}], "}"}]}], "}"}]}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{"PruferCodeAnimation", "[", "G", "]"}]}], "Input",
+ CellChangeTimes->{{3.5998144116829844`*^9, 3.5998144208795104`*^9}}],
+
+Cell[BoxData[
+ TagBox[
+  StyleBox[
+   DynamicModuleBox[{$CellContext`k$29018$$ = 6, Typeset`show$$ = True, 
+    Typeset`bookmarkList$$ = {}, Typeset`bookmarkMode$$ = "Menu", 
+    Typeset`animator$$, Typeset`animvar$$ = 1, Typeset`name$$ = 
+    "\"untitled\"", Typeset`specs$$ = {{
+      Hold[$CellContext`k$29018$$], {1, 2, 3, 4, 5, 6, 7, 8}}}, 
+    Typeset`size$$ = {360., {170., 174.}}, Typeset`update$$ = 0, 
+    Typeset`initDone$$, Typeset`skipInitDone$$ = 
+    True, $CellContext`k$29018$29044$$ = 0}, 
+    DynamicBox[Manipulate`ManipulateBoxes[
+     1, StandardForm, "Variables" :> {$CellContext`k$29018$$ = 1}, 
+      "ControllerVariables" :> {
+        Hold[$CellContext`k$29018$$, $CellContext`k$29018$29044$$, 0]}, 
+      "OtherVariables" :> {
+       Typeset`show$$, Typeset`bookmarkList$$, Typeset`bookmarkMode$$, 
+        Typeset`animator$$, Typeset`animvar$$, Typeset`name$$, 
+        Typeset`specs$$, Typeset`size$$, Typeset`update$$, Typeset`initDone$$,
+         Typeset`skipInitDone$$}, "Body" :> Combinatorica`ShowGraph[
+        Part[$CellContext`graphEachStep$29018, $CellContext`k$29018$$], {{
+          Part[$CellContext`pruferCode$29018, $CellContext`k$29018$$], 
+          Combinatorica`VertexColor -> Green, Combinatorica`VertexStyle -> 
+          Disk[Large]}, {{
+           Part[$CellContext`pruferCode$29018, $CellContext`k$29018$$], 
+           Part[$CellContext`leafEachTime$29018, $CellContext`k$29018$$]}, 
+          Combinatorica`EdgeColor -> Red}}, Combinatorica`VertexLabel -> 
+        True], "Specifications" :> {{$CellContext`k$29018$$, {1, 2, 3, 4, 5, 
+         6, 7, 8}, AnimationRunning -> False, 
+         AppearanceElements -> {
+          "ProgressSlider", "PlayPauseButton", "FasterSlowerButtons", 
+           "DirectionButton"}}}, 
+      "Options" :> {
+       ControlType -> Animator, AppearanceElements -> None, 
+        SynchronousUpdating -> True, ShrinkingDelay -> 10.}, 
+      "DefaultOptions" :> {}],
+     ImageSizeCache->{408., {208., 213.}},
+     SingleEvaluation->True],
+    Deinitialization:>None,
+    DynamicModuleValues:>{},
+    SynchronousInitialization->True,
+    UnsavedVariables:>{Typeset`initDone$$},
+    UntrackedVariables:>{Typeset`size$$}], "Manipulate",
+   Deployed->True,
+   StripOnInput->False],
+  Manipulate`InterpretManipulate[1]]], "Output",
+ CellChangeTimes->{{3.599814421710558*^9, 3.599814471165387*^9}, 
+   3.599814548073786*^9, {3.5998146350897627`*^9, 3.599814637383894*^9}, {
+   3.599815672953125*^9, 3.599815679617506*^9}}]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]]
+},
+AutoGeneratedPackage->None,
+WindowSize->{1162, 743},
+WindowMargins->{{Automatic, 152}, {Automatic, -12}},
+ShowSelection->True,
+FrontEndVersion->"6.0 for Microsoft Windows (64-bit) (April 28, 2007)",
+StyleDefinitions->"Default.nb"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{
+ "Info3599784759-8991910"->{
+  Cell[16169, 408, 264, 5, 40, "Print",
+   CellTags->"Info3599784759-8991910"]},
+ "Info3599786063-5150225"->{
+  Cell[24557, 622, 364, 6, 58, "Print",
+   CellTags->"Info3599786063-5150225"]}
+ }
+*)
+(*CellTagsIndex
+CellTagsIndex->{
+ {"Info3599784759-8991910", 29208, 739},
+ {"Info3599786063-5150225", 29318, 742}
+ }
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[CellGroupData[{
+Cell[590, 23, 119, 1, 83, "Title"],
+Cell[CellGroupData[{
+Cell[734, 28, 93, 1, 71, "Section"],
+Cell[830, 31, 331, 7, 47, "Text"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[1198, 43, 127, 2, 71, "Section"],
+Cell[1328, 47, 935, 15, 101, "Text"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[2300, 67, 129, 2, 71, "Section"],
+Cell[2432, 71, 829, 15, 119, "Text"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[3298, 91, 163, 2, 71, "Section"],
+Cell[CellGroupData[{
+Cell[3486, 97, 101, 1, 36, "Subsection"],
+Cell[3590, 100, 654, 11, 47, "Text"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[4281, 116, 102, 1, 36, "Subsection"],
+Cell[CellGroupData[{
+Cell[4408, 121, 182, 2, 29, "Item"],
+Cell[4593, 125, 317, 5, 29, "Item"],
+Cell[CellGroupData[{
+Cell[4935, 134, 270, 5, 18, "Subitem"],
+Cell[5208, 141, 487, 8, 18, "Subitem"],
+Cell[5698, 151, 366, 6, 18, "Subitem"]
+}, Open  ]],
+Cell[6079, 160, 109, 1, 29, "Item"]
+}, Open  ]]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[6237, 167, 96, 1, 36, "Subsection"],
+Cell[6336, 170, 9396, 222, 668, "Code"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[15769, 397, 95, 1, 36, "Subsection"],
+Cell[CellGroupData[{
+Cell[15889, 402, 277, 4, 31, "Input"],
+Cell[16169, 408, 264, 5, 40, "Print",
+ CellTags->"Info3599784759-8991910"]
+}, Open  ]],
+Cell[16448, 416, 168, 2, 40, "Program"],
+Cell[CellGroupData[{
+Cell[16641, 422, 1228, 33, 68, "Code"],
+Cell[17872, 457, 451, 9, 30, "Output"]
+}, Open  ]]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[18372, 472, 115, 1, 36, "Subsection"],
+Cell[18490, 475, 320, 5, 56, "Program"],
+Cell[18813, 482, 62, 1, 47, "Code"],
+Cell[18878, 485, 5521, 129, 488, "Code"],
+Cell[CellGroupData[{
+Cell[24424, 618, 130, 2, 31, "Input"],
+Cell[24557, 622, 364, 6, 58, "Print",
+ CellTags->"Info3599786063-5150225"]
+}, Open  ]]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[24970, 634, 97, 1, 36, "Subsection"],
+Cell[CellGroupData[{
+Cell[25092, 639, 1205, 32, 52, "Input"],
+Cell[26300, 673, 2498, 48, 438, "Output"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]]
+}
+]
+*)
+
+(* End of internal cache information *)
